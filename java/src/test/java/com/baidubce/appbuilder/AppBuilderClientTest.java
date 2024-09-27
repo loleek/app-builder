@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.tools.Tool;
 import com.baidubce.appbuilder.model.appbuilderclient.AppBuilderClientIterator;
 import com.baidubce.appbuilder.model.appbuilderclient.AppBuilderClientResult;
 import com.baidubce.appbuilder.model.appbuilderclient.AppListRequest;
@@ -24,9 +23,9 @@ public class AppBuilderClientTest {
 
     @Before
     public void setUp() {
-        System.setProperty("APPBUILDER_TOKEN", "");
+        System.setProperty("APPBUILDER_TOKEN", System.getenv("APPBUILDER_TOKEN"));
         System.setProperty("APPBUILDER_LOGLEVEL", "DEBUG");
-        appId = "";
+        appId = "aa8af334-df27-4855-b3d1-0d249c61fc08";
     }
 
     @Test
@@ -100,11 +99,10 @@ public class AppBuilderClientTest {
         required.add("location");
         parameters.put("required", required);
 
-        AppBuilderClientRunRequest.Tool.Function func =
-                new AppBuilderClientRunRequest.Tool.Function(name, desc, parameters);
-        AppBuilderClientRunRequest.Tool tool =
-                new AppBuilderClientRunRequest.Tool("function", func);
-        request.setTools(new AppBuilderClientRunRequest.Tool[] {tool});
+        AppBuilderClientRunRequest.Tool.Function func = new AppBuilderClientRunRequest.Tool.Function(name, desc,
+                parameters);
+        AppBuilderClientRunRequest.Tool tool = new AppBuilderClientRunRequest.Tool("function", func);
+        request.setTools(new AppBuilderClientRunRequest.Tool[] { tool });
 
         AppBuilderClientIterator itor = builder.run(request);
         assertTrue(itor.hasNext());
@@ -119,13 +117,39 @@ public class AppBuilderClientTest {
         request2.setAppId(appId);
         request2.setConversationID(conversationId);
 
-        AppBuilderClientRunRequest.ToolOutput output =
-                new AppBuilderClientRunRequest.ToolOutput(ToolCallID, "北京今天35度");
-        request2.setToolOutputs(new AppBuilderClientRunRequest.ToolOutput[] {output});
+        AppBuilderClientRunRequest.ToolOutput output = new AppBuilderClientRunRequest.ToolOutput(ToolCallID, "北京今天35度");
+        request2.setToolOutputs(new AppBuilderClientRunRequest.ToolOutput[] { output });
         AppBuilderClientIterator itor2 = builder.run(request2);
         assertTrue(itor2.hasNext());
         while (itor2.hasNext()) {
             AppBuilderClientResult result = itor2.next();
+            System.out.println(result);
+        }
+    }
+    
+    @Test
+    public void AppBuilderClientRunToolChoiceTest() throws IOException, AppBuilderServerException {
+        AppBuilderClient builder = new AppBuilderClient(appId);
+        String conversationId = builder.createConversation();
+        assertNotNull(conversationId);
+
+        AppBuilderClientRunRequest request = new AppBuilderClientRunRequest();
+        request.setAppId(appId);
+        request.setConversationID(conversationId);
+        request.setQuery("你能干什么");
+        request.setStream(false);
+        request.setEndUserId("java_test_user_0");
+        Map<String, Object> input = new HashMap<>();
+        input.put("city", "北京");
+        AppBuilderClientRunRequest.ToolChoice.Function func = new AppBuilderClientRunRequest.ToolChoice.Function(
+                "WeatherQuery", input);
+        AppBuilderClientRunRequest.ToolChoice choice = new AppBuilderClientRunRequest.ToolChoice("function", func);
+        request.setToolChoice(choice);
+
+        AppBuilderClientIterator itor = builder.run(request);
+        assertTrue(itor.hasNext());
+        while (itor.hasNext()) {
+            AppBuilderClientResult result = itor.next();
             System.out.println(result);
         }
     }
